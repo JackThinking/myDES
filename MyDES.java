@@ -1,9 +1,10 @@
 //导入库
 import java.util.Arrays;
 
-public class newDES {
-    //数据初始化
-    //初始置换IP盒
+public class MyDES {
+    /*数据初始化*/
+
+    // 初始置换IP盒
     private static final byte[] IP = {
             58, 50, 42, 34, 26, 18, 10, 2,
             60, 52, 44, 36, 28, 20, 12, 4,
@@ -14,7 +15,7 @@ public class newDES {
             61, 53, 45, 37, 29, 21, 13, 5,
             63, 55, 47, 39, 31, 23, 15, 7
     };
-    //逆置换IP-1盒
+    // 逆置换IP-1盒
     private static final byte[] FP = {
             40, 8, 48, 16, 56, 24, 64, 32,
             39, 7, 47, 15, 55, 23, 63, 31,
@@ -25,7 +26,7 @@ public class newDES {
             34, 2, 42, 10, 50, 18, 58, 26,
             33, 1, 41, 9, 49, 17, 57, 25
     };
-    //扩展E盒
+    // 扩展E盒
     private static final byte[] E = {
             32, 1, 2, 3, 4, 5,
             4, 5, 6, 7, 8, 9,
@@ -36,7 +37,7 @@ public class newDES {
             24, 25, 26, 27, 28, 29,
             28, 29, 30, 31, 32, 1
     };
-    //置换P盒
+    // 置换P盒
     private static final byte[] P = {
             16, 7, 20, 21,
             29, 12, 28, 17,
@@ -47,7 +48,7 @@ public class newDES {
             19, 13, 30, 6,
             22, 11, 4, 25
     };
-    //DES的8个S盒
+    // DES的8个S盒
     private static final byte[][] S = {{
             14, 4, 13, 1, 2, 15, 11, 8, 3, 10, 6, 12, 5, 9, 0, 7,
             0, 15, 7, 4, 14, 2, 13, 1, 10, 6, 12, 11, 9, 5, 3, 8,
@@ -89,11 +90,11 @@ public class newDES {
             7, 11, 4, 1, 9, 12, 14, 2, 0, 6, 10, 13, 15, 3, 5, 8,
             2, 1, 14, 7, 4, 10, 8, 13, 15, 12, 9, 0, 3, 5, 6, 11
     }};
-    //？？？
+    //
     private static final byte[] rotations = {
             1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1
     };
-    //DES密钥安排中的比特选择PC1
+    // DES密钥安排中的比特选择PC1
     private static final byte[] PC1 = {
             57, 49, 41, 33, 25, 17, 9,
             1, 58, 50, 42, 34, 26, 18,
@@ -104,7 +105,7 @@ public class newDES {
             14, 6, 61, 53, 45, 37, 29,
             21, 13, 5, 28, 20, 12, 4
     };
-    //DES密钥安排中的比特选择PC2
+    // DES密钥安排中的比特选择PC2
     private static final byte[] PC2 = {
             14, 17, 11, 24, 1, 5,
             3, 28, 15, 6, 21, 10,
@@ -115,6 +116,17 @@ public class newDES {
             44, 49, 39, 56, 34, 53,
             46, 42, 50, 36, 29, 32
     };
+
+    // 初始移位寄存器IV
+    private static long IV;
+
+    public static long getIv() {
+        return IV;
+    }
+
+    public static void setIv(long iv) {
+        IV = iv;
+    }
     /*
     交换函数
     <<:循环左移
@@ -165,12 +177,13 @@ public class newDES {
         src = (byte) (src & 0x20 | ((src & 0x01) << 4) | ((src & 0x1E) >> 1));
         return S[boxNumber - 1][src];
     }
+
     //bytes转long数据
     private static long getLongFromBytes(byte[] ba, int offset) {
         long l = 0;
         for (int i = 0; i < 8; i++) {
             byte value;
-            if ((offset + i) < ba.length){
+            if ((offset + i) < ba.length) {
                 value = ba[offset + i];
             } else {
                 value = 0;
@@ -179,6 +192,7 @@ public class newDES {
         }
         return l;
     }
+
     //long转bytes数据
     private static void getBytesFromLong(byte[] ba, int offset, long l) {
         for (int i = 7; i > -1; i--) {
@@ -190,6 +204,7 @@ public class newDES {
             }
         }
     }
+
     /*DES中核心的feistel结构*/
     private static int feistel(int r, /* 48 bits */ long subkey) {
         // 1. expansion
@@ -211,40 +226,412 @@ public class newDES {
         //返回P置换后的32位数据
         return P(dst);
     }
+
     /*根据64bit秘钥生成16个48bit子秘钥*/
     private static long[] createSubkeys(/* 64 bits */ long key) {
         long subkeys[] = new long[16];
 
-        // perform the PC1 permutation
+        // 64位初始秘钥结果置换选择PC1变成56位秘钥
         key = PC1(key);
 
-        // split into 28-bit left and right (c and d) pairs.
+        // 分成前后两个28bit的C和D
         int c = (int) (key >> 28);
         int d = (int) (key & 0x0FFFFFFF);
 
-        // for each of the 16 needed subkeys, perform a bit
-        // rotation on each 28-bit keystuff half, then join
-        // the halves together and permute to generate the
-        // subkey.
+        // 对于16个子密钥，每个按照28bit前后分成C和D后，进行循环移位然后重新组合
         for (int i = 0; i < 16; i++) {
-            // rotate the 28-bit values
+            // 28bit值循环移位
             if (rotations[i] == 1) {
-                // rotate by 1 bit
+                // 1 bit循环移位
                 c = ((c << 1) & 0x0FFFFFFF) | (c >> 27);
                 d = ((d << 1) & 0x0FFFFFFF) | (d >> 27);
             } else {
-                // rotate by 2 bits
+                //2 bits循环移位
                 c = ((c << 2) & 0x0FFFFFFF) | (c >> 26);
                 d = ((d << 2) & 0x0FFFFFFF) | (d >> 26);
             }
 
-            // join the two keystuff halves together.
+            // 将C和D重新组合
             long cd = (c & 0xFFFFFFFFL) << 28 | (d & 0xFFFFFFFFL);
 
-            // perform the PC2 permutation
+            // 置换选择PC2（56->48），得到48bit秘钥
             subkeys[i] = PC2(cd);
         }
 
         return subkeys; /* 48-bit values */
+    }
+
+    /*
+    * 将string格式的秘钥变成byte的数组
+    * */
+    private static byte[] passwordToKey(String password) {
+        byte[] pwbytes = password.getBytes();
+        byte[] key = new byte[8];
+        for (int i = 0; i < 8; i++) {
+            if (i < pwbytes.length) {
+                byte b = pwbytes[i];
+                // flip the byte
+                byte b2 = 0;
+                for (int j = 0; j < 8; j++) {
+                    b2 <<= 1;
+                    b2 |= (b & 0x01);
+                    b >>>= 1;
+                }
+                key[i] = b2;
+            } else {
+                key[i] = 0;
+            }
+        }
+        return key;
+    }
+    // 所有的加密函数 -----------------------------------------------------------------------------------------
+    /**
+     * 基本块加密：64bit明文加密成64bit密文
+     */
+    public static long encryptBlock(long m, /* 64 bits */ long key) {
+        // 生成16个子密钥
+        long subkeys[] = createSubkeys(key);
+
+        // 64bit明文进行初始IP置换
+        long ip = IP(m);
+
+        // 得到左右各32bit的值
+        int l = (int) (ip >> 32);//左边32位
+        int r = (int) (ip & 0xFFFFFFFFL);//右边32位
+
+        // 16轮迭代
+        for (int i = 0; i < 16; i++) {
+            //保存左边32bit的值
+            int previous_l = l;
+
+            // 左边32bit赋值为右边的32bit
+            l = r;
+
+            // 左边32bit的值与右边经过feistel迭代加密的值进行异或
+            r = previous_l ^ feistel(r, subkeys[i]);
+        }
+        // 交换左右32bit
+        long rl = (r & 0xFFFFFFFFL) << 32 | (l & 0xFFFFFFFFL);
+
+        // FP置换
+        long fp = FP(rl);
+
+        // 返回密文
+        return fp;
+    }
+    /**
+     * 可以byte-8bit加密而不一定是long-64bit加密
+     */
+    public static void encryptBlock(
+            byte[] message,
+            int messageOffset,
+            byte[] ciphertext,
+            int ciphertextOffset,
+            byte[] key
+    ) {
+        long m = getLongFromBytes(message, messageOffset);
+        long k = getLongFromBytes(key, 0);
+        long c = encryptBlock(m, k);
+        getBytesFromLong(ciphertext, ciphertextOffset, c);
+    }
+    /**
+     * ECB加密方式，明文按照64bit切分，不足64bit填0
+     */
+    public static byte[] encryptECB(byte[] message, byte[] key) {
+        byte[] ciphertext = new byte[message.length];
+
+        // encrypt each 8-byte (64-bit) block of the message.
+        for (int i = 0; i < message.length; i += 8) {
+            encryptBlock(message, i, ciphertext, i, key);
+        }
+
+        return ciphertext;
+    }
+    /**
+     * CBC加密方式，明文按照64bit切分，不足64bit填0
+     */
+    public static byte[] encryptCBC(byte[] message, byte[] key) {
+        byte[] ciphertext = new byte[message.length];
+        long k = getLongFromBytes(key, 0);
+        long previousCipherBlock = IV;
+
+        for (int i = 0; i < message.length; i += 8) {
+            // 明文message中逐8byte(64bit)取
+            long messageBlock = getLongFromBytes(message, i);
+
+            // 先将明文与初始IV进行异或，然后进行64bit块加密
+            long cipherBlock = encryptBlock(messageBlock ^ previousCipherBlock, k);
+
+            // 将生成的64bit密文按照顺序放到总密文变量中
+            getBytesFromLong(ciphertext, i, cipherBlock);
+
+            // 将IV替换成生成的密文
+            previousCipherBlock = cipherBlock;
+        }
+
+        return ciphertext;
+    }
+    /*
+     * CFB加密方式，明文按照64bit切分，不足64bit填0
+     * */
+    public static byte[] encryptCFB(byte[] message, byte[] key) {
+        byte[] ciphertext = new byte[message.length];
+        long k = getLongFromBytes(key, 0);
+        long previousCipherBlock = IV;
+
+        for (int i = 0; i < message.length; i += 8) {
+
+            // 明文message中逐8byte(64bit)取
+            long messageBlock = getLongFromBytes(message, i);
+
+            // 对IV加密
+            long cipherBlock = encryptBlock(previousCipherBlock, k);
+
+            // 明文与生成的密文异或
+            long cipherBlock_xor = messageBlock ^ cipherBlock;
+
+            // 密文块存到相应的密文中
+            getBytesFromLong(ciphertext, i, cipherBlock_xor);
+
+            // 将IV替换成生成的密文
+            previousCipherBlock = cipherBlock_xor;
+        }
+        return ciphertext;
+    }
+    /*
+     *OFB加密方式，明文按照64bit切分，不足64bit填0
+     * */
+    public static byte[] encryptOFB(byte[] message, byte[] key) {
+        byte[] ciphertext = new byte[message.length];
+        long k = getLongFromBytes(key, 0);
+        long previousCipherBlock = IV;
+
+        for (int i = 0; i < message.length; i += 8) {
+            // 明文message中逐8byte(64bit)取
+            long messageBlock = getLongFromBytes(message, i);
+            // 对64bit加密
+            long cipherBlock = encryptBlock(previousCipherBlock, k);
+
+            // 明文与生成的密文异或
+            long cipherBlock_xor = messageBlock ^ cipherBlock;
+            // 密文块存到相应的密文中
+
+            getBytesFromLong(ciphertext, i, cipherBlock_xor);
+            // 将IV替换成生成的密文
+
+            previousCipherBlock = cipherBlock;
+        }
+        return ciphertext;
+    }
+    // 所有的加密函数 -----------------------------------------------------------------------------------------
+
+    // 所有的解密函数 -----------------------------------------------------------------------------------------
+    /**
+     * 将64bit密文解密为64bit明文
+     */
+    public static long decryptBlock(long c, /* 64 bits */ long key) {
+        // 生成16个子密钥
+        long[] subkeys = createSubkeys(key);
+
+        // IP置换
+        long ip = IP(c);
+
+        // 分成左右各32bit的分组
+        int l = (int) (ip >> 32);
+        int r = (int) (ip & 0xFFFFFFFFL);
+
+        // 16轮迭代
+        // 注意: 16个子密钥的顺序反过来解密用
+        for (int i = 15; i > -1; i--) {
+            // 左边32bit赋值为右边的32bit
+            int previous_l = l;
+            // 左边32bit赋值为右边的32bit
+            l = r;
+            // 左边32bit的值与右边经过feistel迭代加密的值进行异或
+            r = previous_l ^ feistel(r, subkeys[i]);
+        }
+
+        // 最后一轮左右32bit交换
+        long rl = (r & 0xFFFFFFFFL) << 32 | (l & 0xFFFFFFFFL);
+
+        // FP置换
+        long fp = FP(rl);
+
+        // 返回明文
+        return fp;
+    }
+    /**
+     * byte也可以解密了
+     */
+    public static void decryptBlock(
+            byte[] ciphertext,
+            int ciphertextOffset,
+            byte[] message,
+            int messageOffset,
+            byte[] key
+    ) {
+        long c = getLongFromBytes(ciphertext, ciphertextOffset);
+        long k = getLongFromBytes(key, 0);
+        long m = decryptBlock(c, k);
+        getBytesFromLong(message, messageOffset, m);
+    }
+    /*
+    * ECB解密方式，明文按照64bit切分，不足64bit填0
+    * */
+    public static byte[] decryptECB(byte[] ciphertext, byte[] key) {
+        byte[] message = new byte[ciphertext.length];
+
+        // encrypt each 8-byte (64-bit) block of the message.
+        for (int i = 0; i < ciphertext.length; i += 8) {
+            decryptBlock(ciphertext, i, message, i, key);
+        }
+
+        return message;
+    }
+    /**
+     * CBC解密方式，明文按照64bit切分，不足64bit填0
+     */
+    public static byte[] decryptCBC(byte[] ciphertext, byte[] key) {
+        byte[] message = new byte[ciphertext.length];
+        long k = getLongFromBytes(key, 0);
+        long previousCipherBlock = IV;
+
+        for (int i = 0; i < ciphertext.length; i += 8) {
+            // get the cipher block to be decrypted (8bytes = 64bits)
+            long cipherBlock = getLongFromBytes(ciphertext, i);
+
+            // Decrypt the cipher block and XOR with previousCipherBlock
+            // First previousCiphertext = Initial Vector (IV)
+            long messageBlock = decryptBlock(cipherBlock, k);
+            messageBlock = messageBlock ^ previousCipherBlock;
+
+            // Store the messageBlock in the correct position in message
+            getBytesFromLong(message, i, messageBlock);
+
+            // Update previousCipherBlock
+            previousCipherBlock = cipherBlock;
+        }
+
+        return message;
+    }
+    /*
+     * CFB解密方式，明文按照64bit切分，不足64bit填0
+     * */
+    public static byte[] decryptCFB(byte[] ciphertext, byte[] key) {
+        byte[] message = new byte[ciphertext.length];
+        long k = getLongFromBytes(key, 0);
+        long previousCipherBlock = IV;
+
+        for (int i = 0; i < message.length; i += 8) {
+
+            long cipherBlock = getLongFromBytes(ciphertext, i);
+
+            long messageBlock = encryptBlock(previousCipherBlock, k);
+
+            long messageBlock_xor = messageBlock ^ cipherBlock;
+
+            getBytesFromLong(message, i, messageBlock_xor);
+
+            previousCipherBlock = cipherBlock;
+        }
+        return message;
+    }
+    /*
+     * OFB解密方式，明文按照64bit切分，不足64bit填0
+     * */
+    public static byte[] decryptOFB(byte[] ciphertext, byte[] key) {
+        byte[] message = new byte[ciphertext.length];
+        long k = getLongFromBytes(key, 0);
+        long previousCipherBlock = IV;
+
+        for (int i = 0; i < message.length; i += 8) {
+
+            long cipherBlock = getLongFromBytes(ciphertext, i);
+            //都是加密的方式嘛
+            long messageBlock = encryptBlock(previousCipherBlock, k);
+
+            long messageBlock_xor = messageBlock ^ cipherBlock;
+
+            getBytesFromLong(message, i, messageBlock_xor);
+
+            previousCipherBlock = messageBlock;
+        }
+        return message;
+    }
+    // 所有的解密函数 -----------------------------------------------------------------------------------------
+    /*
+    * char转int
+    * */
+    private static int charToNibble(char c) {
+        if (c >= '0' && c <= '9') {
+            return (c - '0');
+        } else if (c >= 'a' && c <= 'f') {
+            return (10 + c - 'a');
+        } else if (c >= 'A' && c <= 'F') {
+            return (10 + c - 'A');
+        } else {
+            return 0;
+        }
+    }
+    /*
+    * string转byte
+    * */
+    private static byte[] parseBytes(String s) {
+        s = s.replace(" ", "");
+        byte[] ba = new byte[s.length() / 2];
+        if (s.length() % 2 > 0) {
+            s = s + '0';
+        }
+        for (int i = 0; i < s.length(); i += 2) {
+            ba[i / 2] = (byte) (charToNibble(s.charAt(i)) << 4 | charToNibble(s.charAt(i + 1)));
+        }
+        return ba;
+    }
+    /*
+    * hex表示
+    * */
+    private static String hex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < bytes.length; i++) {
+            sb.append(String.format("%02X ", bytes[i]));
+        }
+        return sb.toString();
+    }
+    /*
+     * string转hex
+     * */
+    public static String convertStringToHex(String str){
+
+        char[] chars = str.toCharArray();
+
+        StringBuffer hex = new StringBuffer();
+        for(int i = 0; i < chars.length; i++){
+            hex.append(Integer.toHexString((int)chars[i]));
+        }
+
+        return hex.toString();
+    }
+
+    /*
+    * 程序运行主函数
+    * */
+    public static void main(String[] args) {
+        //String oriText = "f3ed a6dc f8b7 9dd6 5be0 db8b 1e7b a551";
+        //String oriText = "0123 4567 89ab cdef";
+        String oriText = convertStringToHex("12345678");
+        String key = convertStringToHex("12345678");
+
+        byte[] keys = parseBytes(key);
+        byte[] test = parseBytes(oriText);
+
+        System.out.println("Key:  " + hex(keys));
+
+        String result = hex(encryptECB(test, keys));
+        System.out.println("ORIGINAL TEXT:  " + hex(test));
+        System.out.println("Encryption result:  " + result);
+
+        byte[] encResult = parseBytes(result);
+        String decResult = hex(decryptECB(encResult, keys));
+        System.out.println("Decryption result:  " + decResult);
     }
 }
