@@ -13,6 +13,7 @@ public class MyGUI {
     private JPanel GUI;
     private JComboBox comboBox;
     private JTextField re_message;
+    private JTextField IVnumber;
 
     public MyGUI() {
 
@@ -37,21 +38,21 @@ public class MyGUI {
                 byte[] test = parseBytes(oriText);
                 // 选择分组模式加密
                 String result = "";
-
+                long IV = Long.parseLong(IVnumber.getText());
                 if (comboBox.getSelectedItem() == "ECB"){
                     result = hex(encryptECB(test, keys));
                 }
 
                 if (comboBox.getSelectedItem() == "CBC"){
-                    result = hex(encryptCBC(test, keys));
+                    result = hex(encryptCBC(test, keys, IV));
                 }
 
                 if (comboBox.getSelectedItem() == "CFB"){
-                    result = hex(encryptCFB(test, keys));
+                    result = hex(encryptCFB(test, keys, IV));
                 }
 
                 if (comboBox.getSelectedItem() == "OFB"){
-                    result = hex(encryptOFB(test, keys));
+                    result = hex(encryptOFB(test, keys, IV));
                 }
 
                 // 加密后输出到文本框
@@ -74,6 +75,7 @@ public class MyGUI {
 
                 byte[] encResult = parseBytes(result);
                 String res = null;
+                long IV = Long.parseLong(IVnumber.getText());
 
                 if (comboBox.getSelectedItem() == "ECB"){
                     res = new String(decryptECB(encResult, keys));
@@ -81,17 +83,17 @@ public class MyGUI {
                 }
 
                 if (comboBox.getSelectedItem() == "CBC"){
-                    res = new String(decryptCBC(encResult, keys));
+                    res = new String(decryptCBC(encResult, keys,IV));
                     //decResult = hex(decryptCBC(encResult, keys));
                 }
 
                 if (comboBox.getSelectedItem() == "CFB"){
-                    res = new String(decryptCFB(encResult, keys));
+                    res = new String(decryptCFB(encResult, keys, IV));
                     //decResult = hex(decryptCFB(encResult, keys));
                 }
 
                 if (comboBox.getSelectedItem() == "OFB"){
-                    res = new String(decryptOFB(encResult, keys));
+                    res = new String(decryptOFB(encResult, keys, IV));
                     //decResult = hex(decryptOFB(encResult, keys));
                 }
                 re_message.setText(res);
@@ -224,15 +226,16 @@ public class MyGUI {
     };
 
     // 初始移位寄存器IV
-    private static long IV = 12345678;
+    //private static long IV = 12345678;
+    //private long IV = Long.parseLong(IVnumber.getText());
 
-    public static long getIv() {
-        return IV;
-    }
-
-    public static void setIv(long iv) {
-        IV = iv;
-    }
+//    public static long getIv() {
+//        return IV;
+//    }
+//
+//    public static void setIv(long iv) {
+//        IV = iv;
+//    }
     /*
     交换函数
     <<:循环左移
@@ -456,7 +459,7 @@ public class MyGUI {
     /**
      * CBC加密方式，明文按照64bit切分，不足64bit填0
      */
-    public static byte[] encryptCBC(byte[] message, byte[] key) {
+    public static byte[] encryptCBC(byte[] message, byte[] key, long IV) {
         byte[] ciphertext = new byte[message.length];
         long k = getLongFromBytes(key, 0);
         long previousCipherBlock = IV;
@@ -480,7 +483,7 @@ public class MyGUI {
     /*
      * CFB加密方式，明文按照64bit切分，不足64bit填0
      * */
-    public static byte[] encryptCFB(byte[] message, byte[] key) {
+    public static byte[] encryptCFB(byte[] message, byte[] key, long IV) {
         byte[] ciphertext = new byte[message.length];
         long k = getLongFromBytes(key, 0);
         long previousCipherBlock = IV;
@@ -507,7 +510,7 @@ public class MyGUI {
     /*
      *OFB加密方式，明文按照64bit切分，不足64bit填0
      * */
-    public static byte[] encryptOFB(byte[] message, byte[] key) {
+    public static byte[] encryptOFB(byte[] message, byte[] key, long IV) {
         byte[] ciphertext = new byte[message.length];
         long k = getLongFromBytes(key, 0);
         long previousCipherBlock = IV;
@@ -597,7 +600,7 @@ public class MyGUI {
     /**
      * CBC解密方式，明文按照64bit切分，不足64bit填0
      */
-    public static byte[] decryptCBC(byte[] ciphertext, byte[] key) {
+    public static byte[] decryptCBC(byte[] ciphertext, byte[] key, long IV) {
         byte[] message = new byte[ciphertext.length];
         long k = getLongFromBytes(key, 0);
         long previousCipherBlock = IV;
@@ -623,7 +626,7 @@ public class MyGUI {
     /*
      * CFB解密方式，明文按照64bit切分，不足64bit填0
      * */
-    public static byte[] decryptCFB(byte[] ciphertext, byte[] key) {
+    public static byte[] decryptCFB(byte[] ciphertext, byte[] key, long IV) {
         byte[] message = new byte[ciphertext.length];
         long k = getLongFromBytes(key, 0);
         long previousCipherBlock = IV;
@@ -645,7 +648,7 @@ public class MyGUI {
     /*
      * OFB解密方式，明文按照64bit切分，不足64bit填0
      * */
-    public static byte[] decryptOFB(byte[] ciphertext, byte[] key) {
+    public static byte[] decryptOFB(byte[] ciphertext, byte[] key, long IV) {
         byte[] message = new byte[ciphertext.length];
         long k = getLongFromBytes(key, 0);
         long previousCipherBlock = IV;
