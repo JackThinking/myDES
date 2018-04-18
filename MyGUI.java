@@ -20,10 +20,19 @@ public class MyGUI {
         encButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
-                String oriText = convertStringToHex(message.getText());
+                //获取明文信息
+                String oriText = message.getText();
+                //写判断函数
+                int yushu = oriText.length() % 8;
+                System.out.println(yushu);
+                if (yushu != 0){
+                    for(int i=0;i<8-yushu;i++){
+                        oriText += "0";
+                    }
+                }
+                oriText = convertStringToHex(oriText);
+                //获取密钥
                 String keyText = convertStringToHex(key.getText());
-
                 byte[] keys = parseBytes(keyText);
                 byte[] test = parseBytes(oriText);
                 // 选择分组模式加密
@@ -62,26 +71,30 @@ public class MyGUI {
                 String keyText = convertStringToHex(key.getText());
                 byte[] keys = parseBytes(keyText);
                 // 选择分组模式解密部分
-                String decResult = "";
+
                 byte[] encResult = parseBytes(result);
+                String res = null;
 
                 if (comboBox.getSelectedItem() == "ECB"){
-                    decResult = hex(decryptECB(encResult, keys));
+                    res = new String(decryptECB(encResult, keys));
+                    //decResult = decryptECB(encResult, keys);
                 }
 
                 if (comboBox.getSelectedItem() == "CBC"){
-                    decResult = hex(decryptCBC(encResult, keys));
+                    res = new String(decryptCBC(encResult, keys));
+                    //decResult = hex(decryptCBC(encResult, keys));
                 }
 
                 if (comboBox.getSelectedItem() == "CFB"){
-                    decResult = hex(decryptCFB(encResult, keys));
+                    res = new String(decryptCFB(encResult, keys));
+                    //decResult = hex(decryptCFB(encResult, keys));
                 }
 
                 if (comboBox.getSelectedItem() == "OFB"){
-                    decResult = hex(decryptOFB(encResult, keys));
+                    res = new String(decryptOFB(encResult, keys));
+                    //decResult = hex(decryptOFB(encResult, keys));
                 }
-                //String decResult_hex = convertHexToString(decResult);
-                re_message.setText(decResult);
+                re_message.setText(res);
             }
         });
     }
@@ -211,7 +224,7 @@ public class MyGUI {
     };
 
     // 初始移位寄存器IV
-    private static long IV;
+    private static long IV = 12345678;
 
     public static long getIv() {
         return IV;

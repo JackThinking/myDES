@@ -618,7 +618,17 @@ public class MyDES {
     public static void main(String[] args) {
         //String oriText = "f3ed a6dc f8b7 9dd6 5be0 db8b 1e7b a551";
         //String oriText = "0123 4567 89ab cdef";
-        String oriText = convertStringToHex("1234567812345678");
+        String oriText = "123456789";
+        int yushu = oriText.length() % 8;
+        System.out.println(yushu);
+        if (yushu != 0){
+            for(int i=0;i<8-yushu;i++){
+                oriText += "0";
+            }
+        }
+
+        oriText = convertStringToHex(oriText);
+
         String key = convertStringToHex("12345678");
 
         byte[] keys = parseBytes(key);
