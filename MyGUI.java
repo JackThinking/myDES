@@ -14,6 +14,7 @@ public class MyGUI {
     private JComboBox comboBox;
     private JTextField re_message;
     private JTextField IVnumber;
+    int yushu;
 
     public MyGUI() {
 
@@ -24,8 +25,7 @@ public class MyGUI {
                 //获取明文信息
                 String oriText = message.getText();
                 //写判断函数
-                int yushu = oriText.length() % 8;
-                System.out.println(yushu);
+                yushu = oriText.length() % 8;
                 if (yushu != 0){
                     for(int i=0;i<8-yushu;i++){
                         oriText += "0";
@@ -64,6 +64,7 @@ public class MyGUI {
         comboBox.addItem("CBC");
         comboBox.addItem("CFB");
         comboBox.addItem("OFB");
+        IVnumber.setText("00000000");
 
         decButton.addActionListener(new ActionListener() {
             @Override
@@ -95,6 +96,11 @@ public class MyGUI {
                 if (comboBox.getSelectedItem() == "OFB"){
                     res = new String(decryptOFB(encResult, keys, IV));
                     //decResult = hex(decryptOFB(encResult, keys));
+                }
+                if (yushu != 0){
+                    for(int i=0;i<8-yushu;i++){
+                        res = res.substring(0,res.length() - 1);
+                    }
                 }
                 re_message.setText(res);
             }
