@@ -25,15 +25,16 @@ public class MyGUI {
                 //获取明文信息
                 String oriText = message.getText();
                 //写判断函数
-                yushu = oriText.length() % 8;
+                yushu = oriText.length() % 16;
                 if (yushu != 0){
-                    for(int i=0;i<8-yushu;i++){
+                    for(int i=0;i<16-yushu;i++){
                         oriText += "0";
                     }
                 }
-                oriText = convertStringToHex(oriText);
+                //oriText = convertStringToHex(oriText);
                 //获取密钥
-                String keyText = convertStringToHex(key.getText());
+                //String keyText = convertStringToHex(key.getText());
+                String keyText = key.getText();
                 byte[] keys = parseBytes(keyText);
                 byte[] test = parseBytes(oriText);
                 // 选择分组模式加密
@@ -70,35 +71,39 @@ public class MyGUI {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String result = ciphertext.getText();
-                String keyText = convertStringToHex(key.getText());
+                //String keyText = convertStringToHex(key.getText());
+                String keyText = key.getText();
                 byte[] keys = parseBytes(keyText);
                 // 选择分组模式解密部分
-
                 byte[] encResult = parseBytes(result);
                 String res = null;
                 long IV = Long.parseLong(IVnumber.getText());
 
                 if (comboBox.getSelectedItem() == "ECB"){
-                    res = new String(decryptECB(encResult, keys));
+                    //res = new String(decryptECB(encResult, keys));
                     //decResult = decryptECB(encResult, keys);
+                    res = hex(decryptECB(encResult, keys));
                 }
 
                 if (comboBox.getSelectedItem() == "CBC"){
-                    res = new String(decryptCBC(encResult, keys,IV));
+                    //res = new String(decryptCBC(encResult, keys,IV));
                     //decResult = hex(decryptCBC(encResult, keys));
+                    res = hex(decryptCBC(encResult, keys,IV));
                 }
 
                 if (comboBox.getSelectedItem() == "CFB"){
-                    res = new String(decryptCFB(encResult, keys, IV));
+                    //res = new String(decryptCFB(encResult, keys, IV));
                     //decResult = hex(decryptCFB(encResult, keys));
+                    res = hex(decryptCFB(encResult, keys,IV));
                 }
 
                 if (comboBox.getSelectedItem() == "OFB"){
-                    res = new String(decryptOFB(encResult, keys, IV));
+                    //res = new String(decryptOFB(encResult, keys, IV));
                     //decResult = hex(decryptOFB(encResult, keys));
+                    res = hex(decryptOFB(encResult, keys,IV));
                 }
                 if (yushu != 0){
-                    for(int i=0;i<8-yushu;i++){
+                    for(int i=0;i<24-yushu;i++){
                         res = res.substring(0,res.length() - 1);
                     }
                 }
