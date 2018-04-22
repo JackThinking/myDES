@@ -65,7 +65,7 @@ public class MyGUI {
         comboBox.addItem("CBC");
         comboBox.addItem("CFB");
         comboBox.addItem("OFB");
-        IVnumber.setText("00000000");
+        IVnumber.setText("0000000000000000");
 
         decButton.addActionListener(new ActionListener() {
             @Override
